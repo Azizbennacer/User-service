@@ -4,5 +4,3 @@ target/
 # Editors
 .vscode/
 
-# Maven wrapper cache
-.mvn/wrapper/maven-wrapper.jar
