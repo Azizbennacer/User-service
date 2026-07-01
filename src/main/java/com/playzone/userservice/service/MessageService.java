@@ -49,17 +49,18 @@ public class MessageService {
   }
 
   @Transactional(readOnly = true)
-  public List<ConversationSummaryDto> getInbox(UUID receiverId) {
-    List<Object[]> pairs = messageRepository.findDistinctConversationsForReceiver(receiverId);
+  public List<ConversationSummaryDto> getInbox(UUID userId) {
+    // Conversations where the user is sender OR receiver
+    List<Object[]> pairs = messageRepository.findDistinctConversationsForUser(userId);
     List<ConversationSummaryDto> result = new ArrayList<>();
 
     for (Object[] row : pairs) {
       UUID postId = (UUID) row[0];
-      UUID senderId = (UUID) row[1];
+      UUID otherUserId = (UUID) row[1]; // The OTHER participant
 
-      // Get messages for this conversation
+      // Bidirectional message fetch (both directions in the conversation)
       List<MessageDto> messages =
-          messageRepository.findAllByPostAndParticipants(postId, senderId, receiverId).stream()
+          messageRepository.findAllByPostAndParticipants(postId, userId, otherUserId).stream()
               .map(this::toDto)
               .toList();
 
@@ -75,9 +76,9 @@ public class MessageService {
         note = post.getNote();
       }
 
-      // Get sender name
+      // Get the other person's display name
       String senderName = "Utilisateur";
-      var senderOpt = userRepository.findById(senderId);
+      var senderOpt = userRepository.findById(otherUserId);
       if (senderOpt.isPresent()) {
         var sender = senderOpt.get();
         senderName = sender.getDisplayName() != null ? sender.getDisplayName() : sender.getEmail();
@@ -85,7 +86,7 @@ public class MessageService {
 
       result.add(new ConversationSummaryDto(
           postId.toString(),
-          senderId.toString(),
+          otherUserId.toString(), // senderId field = the person to reply to
           senderName,
           sport,
           city,

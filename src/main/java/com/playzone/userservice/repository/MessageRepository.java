@@ -21,12 +21,15 @@ public interface MessageRepository extends JpaRepository<MessageEntity, UUID> {
 
   List<MessageEntity> findByReceiverIdOrderByCreatedAtDesc(UUID receiverId);
 
-  /** Find all distinct (postId, senderId) pairs where current user received messages */
-  @Query("SELECT DISTINCT m.postId, m.senderId FROM MessageEntity m WHERE m.receiverId = :receiverId")
-  List<Object[]> findDistinctConversationsForReceiver(@Param("receiverId") UUID receiverId);
+  /** Find all distinct (postId, otherUserId) for conversations involving the user (as sender OR receiver) */
+  @Query("SELECT DISTINCT m.postId, "
+      + "CASE WHEN m.senderId = :userId THEN m.receiverId ELSE m.senderId END "
+      + "FROM MessageEntity m WHERE m.senderId = :userId OR m.receiverId = :userId")
+  List<Object[]> findDistinctConversationsForUser(@Param("userId") UUID userId);
 
   @Query("SELECT m FROM MessageEntity m WHERE m.postId = :postId "
-      + "AND m.senderId = :senderId AND m.receiverId = :receiverId ORDER BY m.createdAt ASC")
+      + "AND ((m.senderId = :senderId AND m.receiverId = :receiverId) "
+      + "OR (m.senderId = :receiverId AND m.receiverId = :senderId)) ORDER BY m.createdAt ASC")
   List<MessageEntity> findAllByPostAndParticipants(
       @Param("postId") UUID postId,
       @Param("senderId") UUID senderId,
