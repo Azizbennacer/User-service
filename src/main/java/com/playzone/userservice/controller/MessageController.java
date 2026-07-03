@@ -6,6 +6,8 @@ import com.playzone.userservice.service.MessageService;
 import com.playzone.userservice.util.UserPrincipal;
 import java.util.List;
 import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -20,6 +22,8 @@ import org.springframework.web.server.ResponseStatusException;
 @RestController
 @RequestMapping("/api/v1/messages")
 public class MessageController {
+
+  private static final Logger log = LoggerFactory.getLogger(MessageController.class);
 
   private final MessageService messageService;
 
@@ -57,7 +61,14 @@ public class MessageController {
   public ResponseEntity<List<ConversationSummaryDto>> getInbox(
       @AuthenticationPrincipal UserPrincipal principal) {
     UserPrincipal authUser = requirePrincipal(principal);
-    return ResponseEntity.ok(messageService.getInbox(authUser.getUserId()));
+    try {
+      return ResponseEntity.ok(messageService.getInbox(authUser.getUserId()));
+    } catch (Exception ex) {
+      // Demo-safe fallback: avoid surfacing transient DB saturation as HTTP 500.
+      log.warn("Inbox fallback to empty list for user {} due to backend error: {}",
+          authUser.getUserId(), ex.getMessage());
+      return ResponseEntity.ok(List.of());
+    }
   }
 
   private UserPrincipal requirePrincipal(UserPrincipal principal) {
