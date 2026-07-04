@@ -62,7 +62,6 @@ public class SecurityConfig {
 
     @Bean
     public UserDetailsService userDetailsService() {
-        // JWT-only service — form-based login is not used
         return username -> { throw new UsernameNotFoundException("Not applicable"); };
     }
 
