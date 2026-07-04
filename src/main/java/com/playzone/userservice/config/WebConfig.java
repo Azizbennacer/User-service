@@ -18,7 +18,6 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        // photoUrl is stored as "/uploads/photos/<file>"; serve it from the physical uploads folder.
         Path uploadsPath = Paths.get(uploadsDir).toAbsolutePath().normalize();
         registry.addResourceHandler("/uploads/photos/**")
             .addResourceLocations(uploadsPath.toUri().toString());
